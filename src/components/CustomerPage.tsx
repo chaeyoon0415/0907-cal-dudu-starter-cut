@@ -16,7 +16,7 @@ interface CustomerPageProps {
 
 export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '', isAdmin }) => {
   // isAdmin is from auth but not used in local mode
-  const [customerId] = useState<string>(userId);
+  const [customerId] = useState<string>(userId || 'C01');
   const [stage, setStage] = useState<'select' | 'confirm' | 'view' | 'reselect'>('select');
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [slots, setSlots] = useState<Record<string, Slot>>({});
