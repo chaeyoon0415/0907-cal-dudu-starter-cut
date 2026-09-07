@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SlotTable } from './SlotTable';
 import type { Slot, Request, Candidate } from '../types';
 import { OperationManager } from '../utils/operations';
+import { SupabaseOperationManager } from '../utils/supabaseOperations';
 import { DatabaseManager } from '../utils/database';
 import { decideRequestStatus } from '../utils/decide';
 import { TIME_SLOTS } from '../utils/constants';
@@ -9,10 +10,13 @@ import { TIME_SLOTS } from '../utils/constants';
 interface CustomerPageProps {
   db: DatabaseManager;
   mode: 'local' | 'supabase';
+  userId?: string;
+  isAdmin?: boolean;
 }
 
-export const CustomerPage: React.FC<CustomerPageProps> = ({ db }) => {
-  const [customerId, setCustomerId] = useState<string>('C01');
+export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '', isAdmin }) => {
+  // isAdmin is from auth but not used in local mode
+  const [customerId] = useState<string>(userId);
   const [stage, setStage] = useState<'select' | 'confirm' | 'view' | 'reselect'>('select');
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [slots, setSlots] = useState<Record<string, Slot>>({});
@@ -24,33 +28,83 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db }) => {
   const [loading, setLoading] = useState(false);
 
   const om = new OperationManager(db);
+  const som = new SupabaseOperationManager();
 
   // 초기 로드
   useEffect(() => {
     loadData();
-  }, [customerId]);
+  }, [customerId, mode]);
 
-  const loadData = () => {
-    const state = db.getState();
-    setSlots(state.slots);
-    const status = om.getCustomerStatus(customerId);
-    setCustomerRequests(status);
+  const loadData = async () => {
     setError('');
     setSuccess('');
 
-    // 첫 로드인지 확인
-    if (status.length === 0) {
-      setStage('select');
-      setSelectedSlots([]);
-    } else {
-      const latest = status[status.length - 1];
-      if (latest.request.status === 'needs_reselection') {
-        setStage('reselect');
-      } else if (latest.request.status === 'confirmed') {
-        setStage('view');
+    try {
+      if (mode === 'local') {
+        const state = db.getState();
+        setSlots(state.slots);
+        const status = om.getCustomerStatus(customerId);
+        setCustomerRequests(status);
+
+        if (status.length === 0) {
+          setStage('select');
+          setSelectedSlots([]);
+        } else {
+          const latest = status[status.length - 1];
+          if (latest.request.status === 'needs_reselection') {
+            setStage('reselect');
+          } else if (latest.request.status === 'confirmed') {
+            setStage('view');
+          } else {
+            setStage('view');
+          }
+        }
       } else {
-        setStage('view');
+        // Supabase 모드
+        const [slotsResult, requestsResult] = await Promise.all([
+          som.getSlots(),
+          som.getCustomerRequests(customerId),
+        ]);
+
+        if (slotsResult.error) {
+          setError(`슬롯 조회 실패: ${slotsResult.error}`);
+          return;
+        }
+
+        if (requestsResult.error) {
+          setError(`신청 조회 실패: ${requestsResult.error}`);
+          return;
+        }
+
+        const slotsMap: Record<string, Slot> = {};
+        slotsResult.slots.forEach(slot => {
+          slotsMap[slot.id] = slot;
+        });
+        setSlots(slotsMap);
+
+        const status = requestsResult.requests.map(({ request, candidates }) => ({
+          request,
+          candidates,
+          decision: { status: request.status === 'confirmed' ? 'ok' : 'ok' },
+        }));
+        setCustomerRequests(status);
+
+        if (status.length === 0) {
+          setStage('select');
+          setSelectedSlots([]);
+        } else {
+          const latest = status[status.length - 1];
+          if (latest.request.status === 'needs_reselection') {
+            setStage('reselect');
+          } else if (latest.request.status === 'confirmed') {
+            setStage('view');
+          } else {
+            setStage('view');
+          }
+        }
       }
+    } catch (err) {
+      setError(`데이터 로드 실패: ${String(err)}`);
     }
   };
 
@@ -77,8 +131,13 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db }) => {
     setSuccess('');
 
     try {
-      const operationId = `submit-${customerId}-${Date.now()}`;
-      const result = await om.submitRequest(customerId, selectedSlots, operationId);
+      let result: any;
+      if (mode === 'local') {
+        const operationId = `submit-${customerId}-${Date.now()}`;
+        result = await om.submitRequest(customerId, selectedSlots, operationId);
+      } else {
+        result = await som.submitRequest(customerId, selectedSlots);
+      }
 
       if (result.success) {
         setSuccess('신청이 완료되었습니다!');
@@ -107,13 +166,23 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db }) => {
 
     try {
       const latest = customerRequests[customerRequests.length - 1];
-      const operationId = `reselect-${latest.request.id}-${Date.now()}`;
-      const result = await om.resubmitRequest(
-        customerId,
-        latest.request.id,
-        selectedSlots,
-        operationId
-      );
+      let result: any;
+
+      if (mode === 'local') {
+        const operationId = `reselect-${latest.request.id}-${Date.now()}`;
+        result = await om.resubmitRequest(
+          customerId,
+          latest.request.id,
+          selectedSlots,
+          operationId
+        );
+      } else {
+        result = await som.resubmitRequest(
+          customerId,
+          latest.request.id,
+          selectedSlots
+        );
+      }
 
       if (result.success) {
         setSuccess('재선택이 완료되었습니다!');
@@ -155,16 +224,12 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db }) => {
 
   return (
     <div className="customer-page">
-      <div className="form-group">
-        <label>고객 코드</label>
-        <input
-          type="text"
-          value={customerId}
-          onChange={e => setCustomerId(e.target.value)}
-          placeholder="C01"
-          disabled={stage === 'confirm'}
-        />
-      </div>
+      {mode === 'local' && (
+        <div style={{ marginBottom: '20px', padding: '12px', background: '#f9f9f9', borderRadius: '4px' }}>
+          <label style={{ fontWeight: 'bold' }}>고객 코드: </label>
+          <span>{customerId}</span>
+        </div>
+      )}
 
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}

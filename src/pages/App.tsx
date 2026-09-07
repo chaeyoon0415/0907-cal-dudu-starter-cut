@@ -2,24 +2,46 @@ import React, { useState } from 'react';
 import { CustomerPage } from '../components/CustomerPage';
 import { AdminPage } from '../components/AdminPage';
 import { DatabaseManager } from '../utils/database';
+import { AuthPanel } from '../components/AuthPanel';
 import { REFERENCE_TIME } from '../utils/constants';
 
 type Mode = 'local' | 'supabase';
-type Role = 'customer' | 'admin';
 
 const App: React.FC = () => {
-  const [mode] = useState<Mode>('local');
-  const [role, setRole] = useState<Role>('customer');
+  const [mode, setMode] = useState<Mode>('local');
+  const [role, setRole] = useState<'customer' | 'admin'>('customer');
   const [db] = useState(() => new DatabaseManager());
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const handleRoleChange = (newRole: Role) => {
-    setRole(newRole);
+  const handleRoleChange = (newRole: 'customer' | 'admin') => {
+    // 로컬 모드에서만 역할 전환 가능
+    if (mode === 'local') {
+      setRole(newRole);
+    }
+  };
+
+  const handleModeChange = (newMode: Mode) => {
+    setMode(newMode);
+    if (newMode === 'local') {
+      setRole('customer');
+      setUserId(null);
+      setIsAdmin(false);
+    }
   };
 
   const handleResetData = () => {
     if (window.confirm('모든 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
       db.reset();
       window.location.reload();
+    }
+  };
+
+  const handleAuthChange = (newUserId: string | null, newIsAdmin: boolean) => {
+    setUserId(newUserId);
+    setIsAdmin(newIsAdmin);
+    if (newUserId) {
+      setRole(newIsAdmin ? 'admin' : 'customer');
     }
   };
 
@@ -35,33 +57,49 @@ const App: React.FC = () => {
 
         <div className="role-selector">
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <span style={{ fontWeight: 'bold', fontSize: '14px' }}>역할</span>
+            <span style={{ fontWeight: 'bold', fontSize: '14px' }}>모드</span>
             <button
-              className={`btn ${role === 'customer' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => handleRoleChange('customer')}
+              className={`btn ${mode === 'local' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => handleModeChange('local')}
               style={{ padding: '8px 16px', fontSize: '14px' }}
             >
-              고객
+              로컬 모드
             </button>
             <button
-              className={`btn ${role === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => handleRoleChange('admin')}
+              className={`btn ${mode === 'supabase' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => handleModeChange('supabase')}
               style={{ padding: '8px 16px', fontSize: '14px' }}
             >
-              어드민
+              Supabase 모드
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginLeft: '20px' }}>
-            <span className={`mode-badge ${mode}`}>{mode === 'local' ? '로컬 모드' : 'Supabase 모드'}</span>
-            <button
-              className="btn btn-secondary"
-              onClick={handleResetData}
-              style={{ padding: '6px 12px', fontSize: '12px' }}
-            >
-              데이터 초기화
-            </button>
-          </div>
+          {mode === 'local' && (
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginLeft: '20px' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>역할</span>
+              <button
+                className={`btn ${role === 'customer' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => handleRoleChange('customer')}
+                style={{ padding: '8px 16px', fontSize: '14px' }}
+              >
+                고객
+              </button>
+              <button
+                className={`btn ${role === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => handleRoleChange('admin')}
+                style={{ padding: '8px 16px', fontSize: '14px' }}
+              >
+                어드민
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={handleResetData}
+                style={{ padding: '6px 12px', fontSize: '12px', marginLeft: '10px' }}
+              >
+                데이터 초기화
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -73,14 +111,33 @@ const App: React.FC = () => {
       )}
 
       {mode === 'supabase' && (
-        <div className="alert alert-warning">
-          <strong>Supabase 모드:</strong> 실제 데이터베이스와 인증이 적용됩니다. 환경 변수 설정 필요합니다.
-          (미구현 - 현재 로컬 모드만 지원)
-        </div>
+        <>
+          <div className="alert alert-warning">
+            <strong>Supabase 모드:</strong> 실제 데이터베이스와 Supabase 인증이 적용됩니다.
+          </div>
+          <AuthPanel onAuthChange={handleAuthChange} />
+        </>
       )}
 
-      {role === 'customer' && <CustomerPage db={db} mode={mode} />}
-      {role === 'admin' && <AdminPage db={db} mode={mode} />}
+      {mode === 'local' && (
+        <>
+          {role === 'customer' && <CustomerPage db={db} mode={mode} />}
+          {role === 'admin' && <AdminPage db={db} mode={mode} />}
+        </>
+      )}
+
+      {mode === 'supabase' && userId && (
+        <>
+          {role === 'customer' && <CustomerPage db={db} mode={mode} userId={userId} isAdmin={isAdmin} />}
+          {role === 'admin' && <AdminPage db={db} mode={mode} userId={userId} isAdmin={isAdmin} />}
+        </>
+      )}
+
+      {mode === 'supabase' && !userId && (
+        <div className="alert alert-info" style={{ marginTop: '20px' }}>
+          로그인하여 예약을 시작하세요.
+        </div>
+      )}
 
       <hr style={{ margin: '40px 0', borderColor: '#ddd' }} />
       <div style={{ fontSize: '12px', color: '#666', textAlign: 'center', paddingBottom: '20px' }}>

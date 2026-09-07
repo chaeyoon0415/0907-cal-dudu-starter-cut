@@ -2,16 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { SlotTable } from './SlotTable';
 import type { Slot, Request, Candidate, OperationLog } from '../types';
 import { OperationManager } from '../utils/operations';
+import { SupabaseOperationManager } from '../utils/supabaseOperations';
 import { DatabaseManager } from '../utils/database';
 import { TIME_SLOTS } from '../utils/constants';
 
 interface AdminPageProps {
   db: DatabaseManager;
   mode: 'local' | 'supabase';
+  userId?: string;
+  isAdmin?: boolean;
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ db }) => {
-  const [adminId] = useState<string>('ADMIN001');
+export const AdminPage: React.FC<AdminPageProps> = ({ db, mode, userId = '', isAdmin }) => {
+  // isAdmin is from auth but not used in local mode
+  const [adminId] = useState<string>(userId || 'ADMIN001');
   const [slots, setSlots] = useState<Record<string, Slot>>({});
   const [requests, setRequests] = useState<
     Array<{ request: Request; candidates: Candidate[]; decision: any }>
@@ -24,19 +28,58 @@ export const AdminPage: React.FC<AdminPageProps> = ({ db }) => {
   const [loading, setLoading] = useState(false);
 
   const om = new OperationManager(db);
+  const som = new SupabaseOperationManager();
 
   // 초기 로드
   useEffect(() => {
     loadData();
-  }, []);
+  }, [mode]);
 
-  const loadData = () => {
-    const state = db.getState();
-    setSlots(state.slots);
-    setRequests(om.getAdminRequests());
-    setLogs(state.logs || []);
+  const loadData = async () => {
     setError('');
     setSuccess('');
+
+    try {
+      if (mode === 'local') {
+        const state = db.getState();
+        setSlots(state.slots);
+        setRequests(om.getAdminRequests());
+        setLogs(state.logs || []);
+      } else {
+        // Supabase 모드
+        const [slotsResult, requestsResult, logsResult] = await Promise.all([
+          som.getSlots(),
+          som.getAllRequests(),
+          som.getOperationLogs(),
+        ]);
+
+        if (slotsResult.error) {
+          setError(`슬롯 조회 실패: ${slotsResult.error}`);
+          return;
+        }
+
+        if (requestsResult.error) {
+          setError(`신청 조회 실패: ${requestsResult.error}`);
+          return;
+        }
+
+        const slotsMap: Record<string, Slot> = {};
+        slotsResult.slots.forEach(slot => {
+          slotsMap[slot.id] = slot;
+        });
+        setSlots(slotsMap);
+
+        const adminRequests = requestsResult.requests.map(({ request, candidates }) => ({
+          request,
+          candidates,
+          decision: { status: request.status === 'confirmed' ? 'ok' : 'ok' },
+        }));
+        setRequests(adminRequests);
+        setLogs(logsResult.logs || []);
+      }
+    } catch (err) {
+      setError(`데이터 로드 실패: ${String(err)}`);
+    }
   };
 
   const handleConfirm = async () => {
@@ -50,13 +93,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ db }) => {
     setSuccess('');
 
     try {
-      const operationId = `confirm-${selectedRequest}-${selectedSlotForConfirm}-${Date.now()}`;
-      const result = await om.confirmRequest(
-        selectedRequest,
-        selectedSlotForConfirm,
-        adminId,
-        operationId
-      );
+      let result: any;
+      if (mode === 'local') {
+        const operationId = `confirm-${selectedRequest}-${selectedSlotForConfirm}-${Date.now()}`;
+        result = await om.confirmRequest(
+          selectedRequest,
+          selectedSlotForConfirm,
+          adminId,
+          operationId
+        );
+      } else {
+        result = await som.confirmRequest(
+          selectedRequest,
+          selectedSlotForConfirm,
+          adminId
+        );
+      }
 
       if (result.success) {
         setSuccess(`확정되었습니다! 영향받은 요청: ${result.affectedRequests?.length || 0}건`);
