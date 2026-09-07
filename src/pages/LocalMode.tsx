@@ -2,18 +2,35 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { DatabaseManager } from '../utils/database';
 import { REFERENCE_TIME } from '../utils/constants';
+import { supabase } from '../utils/supabaseClient';
 
 export const LocalMode: React.FC = () => {
   const navigate = useNavigate();
   const [role, setRole] = useState<'customer' | 'admin'>('customer');
   const [db] = useState(() => new DatabaseManager());
 
-  const handleRoleChange = (newRole: 'customer' | 'admin') => {
-    setRole(newRole);
+  const handleRoleChange = async (newRole: 'customer' | 'admin') => {
     if (newRole === 'customer') {
+      setRole(newRole);
       navigate('/local/select');
     } else {
-      navigate('/local/admin');
+      const { data: { session } } = await supabase.auth.getSession();
+      const hasGoogleLogin = session?.user?.identities?.some(id => id.provider === 'google');
+
+      if (hasGoogleLogin) {
+        setRole(newRole);
+        navigate('/local/admin');
+      } else {
+        const confirmed = window.confirm('어드민 페이지는 Google 로그인이 필수입니다.\n\nSupabase 모드로 이동하여 Google로 로그인하시겠습니까?');
+        if (confirmed) {
+          await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: `${window.location.origin}/auth/callback`
+            }
+          });
+        }
+      }
     }
   };
 

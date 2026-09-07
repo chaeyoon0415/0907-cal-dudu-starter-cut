@@ -110,6 +110,28 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onAuthChange }) => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const { error: signInError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (signInError) {
+        setError(signInError.message);
+      }
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -166,6 +188,20 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onAuthChange }) => {
           {loading ? '처리 중...' : '가입'}
         </button>
       </form>
+
+      <div style={{ margin: '20px 0', textAlign: 'center' }}>
+        <p style={{ color: '#999', fontSize: '12px', margin: '10px 0' }}>또는</p>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={handleGoogleLogin}
+          disabled={loading}
+          style={{ width: '100%', background: '#fff', color: '#333', border: '1px solid #ddd' }}
+        >
+          {loading ? '처리 중...' : '🔵 Google로 로그인'}
+        </button>
+      </div>
+
       {error && <div className="alert alert-error" style={{ marginTop: '10px' }}>{error}</div>}
     </div>
   );

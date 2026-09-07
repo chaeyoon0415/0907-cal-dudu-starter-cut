@@ -13,8 +13,7 @@ interface AdminPageProps {
   isAdmin?: boolean;
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ db, mode, userId = '', isAdmin }) => {
-  // isAdmin is from auth but not used in local mode
+export const AdminPage: React.FC<AdminPageProps> = ({ db, mode, userId = '' }) => {
   const [adminId] = useState<string>(userId || 'ADMIN001');
   const [slots, setSlots] = useState<Record<string, Slot>>({});
   const [requests, setRequests] = useState<
@@ -150,10 +149,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ db, mode, userId = '', isA
                   style={{
                     cursor: 'pointer',
                     background: selectedRequest === item.request.id ? '#e7f3ff' : 'white',
-                    borderColor: selectedRequest === item.request.id ? '#007bff' : '#ddd',
                     marginBottom: '0',
                     borderRadius: '0',
-                    borderBottom: '1px solid #ddd',
+                    borderBottom: `1px solid ${selectedRequest === item.request.id ? '#007bff' : '#ddd'}`,
                   }}
                 >
                   <div>

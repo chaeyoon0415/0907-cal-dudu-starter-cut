@@ -14,8 +14,7 @@ interface CustomerPageProps {
   isAdmin?: boolean;
 }
 
-export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '', isAdmin }) => {
-  // isAdmin is from auth but not used in local mode
+export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '' }) => {
   const [customerId] = useState<string>(userId || 'C01');
   const [stage, setStage] = useState<'select' | 'confirm' | 'view' | 'reselect'>('select');
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
