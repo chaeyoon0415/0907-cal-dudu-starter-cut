@@ -203,6 +203,7 @@ export class SupabaseOperationManager {
         status: row.status,
         confirmedSlotId: row.confirmed_slot_id,
         confirmedAt: row.confirmed_at,
+        expectedConfirmAt: row.expected_confirm_at,
       }));
 
       // 후보 조회
@@ -262,6 +263,7 @@ export class SupabaseOperationManager {
         status: row.status,
         confirmedSlotId: row.confirmed_slot_id,
         confirmedAt: row.confirmed_at,
+        expectedConfirmAt: row.expected_confirm_at,
       }));
 
       const requestIds = requests.map((r: any) => r.id);

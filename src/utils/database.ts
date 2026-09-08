@@ -141,12 +141,16 @@ export class DatabaseManager {
       return null; // 이미 미확정 요청이 있음
     }
 
+    const now = new Date();
+    const expectedConfirmTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
     const request: Request = {
       id: generateId(),
       customerId,
       version: 1,
-      createdAt: new Date().toISOString(),
+      createdAt: now.toISOString(),
       status: 'received',
+      expectedConfirmAt: expectedConfirmTime.toISOString(),
     };
     current.requests.push(request);
     return request;

@@ -69,3 +69,17 @@ export function generateAllSlots() {
 
   return slots;
 }
+
+// 확정 예정 시점을 보기 좋은 형식으로 변환
+export function formatExpectedConfirmTime(isoTime: string): string {
+  const date = new Date(isoTime);
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hour = date.getHours();
+
+  let timeOfDay = '오전';
+  if (hour >= 13) timeOfDay = '오후';
+  if (hour >= 18) timeOfDay = '저녁';
+
+  return `${month}월 ${day}일 ${timeOfDay}`;
+}

@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS requests (
   status TEXT NOT NULL DEFAULT 'received' CHECK (status IN ('received', 'needs_reselection', 'confirmed')),
   confirmed_slot_id TEXT REFERENCES slots(id),
   confirmed_at TIMESTAMPTZ,
+  expected_confirm_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -205,8 +206,8 @@ BEGIN
   END IF;
 
   BEGIN
-    INSERT INTO requests (customer_id, version, status)
-    VALUES (p_customer_id, 1, 'received')
+    INSERT INTO requests (customer_id, version, status, expected_confirm_at)
+    VALUES (p_customer_id, 1, 'received', NOW() + INTERVAL '24 hours')
     RETURNING id INTO v_request_id;
 
     SELECT COALESCE(MAX(queue_seq), 0) + 1 INTO v_queue_seq FROM candidates;
@@ -404,7 +405,7 @@ BEGIN
     
     -- 상태 received로 갱신
     UPDATE requests
-    SET status = 'received', version = v_new_version, updated_at = NOW()
+    SET status = 'received', version = v_new_version, expected_confirm_at = NOW() + INTERVAL '24 hours', updated_at = NOW()
     WHERE id = p_request_id;
 
     -- 새로운 버전의 후보 추가

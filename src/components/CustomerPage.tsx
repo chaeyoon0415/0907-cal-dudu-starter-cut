@@ -5,7 +5,7 @@ import { OperationManager } from '../utils/operations';
 import { SupabaseOperationManager } from '../utils/supabaseOperations';
 import { DatabaseManager } from '../utils/database';
 import { decideRequestStatus } from '../utils/decide';
-import { TIME_SLOTS } from '../utils/constants';
+import { TIME_SLOTS, formatExpectedConfirmTime } from '../utils/constants';
 
 interface CustomerPageProps {
   db: DatabaseManager;
@@ -247,8 +247,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '
             maxSelect={3}
           />
 
-          <div style={{ marginBottom: '20px' }}>
-            <h4>선택한 슬롯 ({selectedSlots.length}/3)</h4>
+          <div className="selected-slots-list">
+            <h4>선택한 슬롯 (우선순위 순)</h4>
             <ul className="list">
               {selectedSlots.map((slotId, idx) => {
                 const slot = slots[slotId];
@@ -288,7 +288,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '
           </p>
           <SlotTable slots={slots} selectedSlots={selectedSlots} onToggle={() => {}} mode="view" />
 
-          <div style={{ marginBottom: '20px' }}>
+          <div className="selected-slots-list">
             <h4>최종 선택 (우선순위 순)</h4>
             <ul className="list">
               {selectedSlots.map((slotId, idx) => {
@@ -337,7 +337,14 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '
                     <span className="slot-status confirmed">확정됨</span>
                   )}
                   {item.request.status === 'received' && (
-                    <span className="slot-status available">접수됨</span>
+                    <div>
+                      <span className="slot-status available">접수됨 (관리자 확인 중)</span>
+                      {item.request.expectedConfirmAt && (
+                        <div style={{ marginTop: '8px', fontSize: '14px', color: '#666', fontWeight: 'normal' }}>
+                          <strong>{formatExpectedConfirmTime(item.request.expectedConfirmAt)}까지 확정 예정입니다.</strong>
+                        </div>
+                      )}
+                    </div>
                   )}
                   {item.request.status === 'needs_reselection' && (
                     <span className="alert alert-warning">재선택 필요</span>
@@ -405,8 +412,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '
             maxSelect={3}
           />
 
-          <div style={{ marginBottom: '20px' }}>
-            <h4>새로 선택한 슬롯 ({selectedSlots.length}/3)</h4>
+          <div className="selected-slots-list">
+            <h4>새로 선택한 슬롯 (우선순위 순)</h4>
             <ul className="list">
               {selectedSlots.map((slotId, idx) => {
                 const slot = slots[slotId];
