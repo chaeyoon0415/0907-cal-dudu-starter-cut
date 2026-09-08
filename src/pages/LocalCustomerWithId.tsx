@@ -19,9 +19,10 @@ export const LocalCustomerWithId: React.FC = () => {
 
   if (customerId) {
     try {
-      // URL 디코딩 후 base64 디코딩
+      // URL 디코딩 후 base64 디코딩, UTF-8 디코딩
       const urlDecoded = decodeURIComponent(customerId);
-      const decoded = JSON.parse(atob(urlDecoded));
+      const decodedString = decodeURIComponent(escape(atob(urlDecoded)));
+      const decoded = JSON.parse(decodedString);
       customerName = decoded.name || '';
       // 내부적으로는 customerId를 고유하게 생성하기 위해 이메일을 해시 처리
       decodedCustomerId = `${decoded.name}:${decoded.email}`;

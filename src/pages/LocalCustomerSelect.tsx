@@ -30,8 +30,9 @@ export const LocalCustomerSelect: React.FC = () => {
       return;
     }
 
-    // customerId를 name:email 형식으로 생성 (base64 인코딩)
-    const customerData = btoa(JSON.stringify({ name: name.trim(), email: email.trim() }));
+    // customerId를 name:email 형식으로 생성 (UTF-8 + base64 인코딩)
+    const jsonString = JSON.stringify({ name: name.trim(), email: email.trim() });
+    const customerData = btoa(unescape(encodeURIComponent(jsonString)));
     // URL 인코딩으로 base64의 특수문자 처리
     navigate(`/local/customer/${encodeURIComponent(customerData)}`);
   };
