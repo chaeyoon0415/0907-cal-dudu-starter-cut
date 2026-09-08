@@ -484,7 +484,8 @@ VALUES
   ('2026-09-20:evening', '2026-09-20', 'evening', 'available'),
   ('2026-09-21:am', '2026-09-21', 'am', 'available'),
   ('2026-09-21:pm', '2026-09-21', 'pm', 'available'),
-  ('2026-09-21:evening', '2026-09-21', 'evening', 'available'),
+  ('2026-09-21:evening', '2026-09-
+  21', 'evening', 'available'),
   ('2026-09-22:am', '2026-09-22', 'am', 'available'),
   ('2026-09-22:pm', '2026-09-22', 'pm', 'available'),
   ('2026-09-22:evening', '2026-09-22', 'evening', 'available')

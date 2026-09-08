@@ -7,9 +7,9 @@ export const END_DATE = new Date('2026-09-22T23:59:59+09:00');
 
 // 시간대 (KST 기준)
 export const TIME_SLOTS = [
-  { label: 'am', hour: 9, displayLabel: '오전 09:00' },
-  { label: 'pm', hour: 13, displayLabel: '오후 13:00' },
-  { label: 'evening', hour: 18, displayLabel: '저녁 18:00' },
+  { label: 'am', hour: 9, displayLabel: '오전 09:00', timeRange: '09:00 - 10:00' },
+  { label: 'pm', hour: 13, displayLabel: '오후 13:00', timeRange: '13:00 - 14:00' },
+  { label: 'evening', hour: 18, displayLabel: '저녁 18:00', timeRange: '18:00 - 19:00' },
 ];
 
 // 총 슬롯 수 계산

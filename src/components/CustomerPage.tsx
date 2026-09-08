@@ -200,7 +200,14 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '
 
   const handleCancel = () => {
     setSelectedSlots([]);
-    setStage('view');
+    // confirm 단계에서 돌아갈 때는 select 단계로, reselect 단계에서는 view 단계로
+    if (stage === 'confirm') {
+      setStage('select');
+    } else if (stage === 'reselect') {
+      setStage('view');
+    } else {
+      setStage('view');
+    }
     setError('');
   };
 
@@ -286,17 +293,19 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '
           <p style={{ color: '#666', fontSize: '14px' }}>
             다음과 같이 신청합니다. 제출하면 어드민이 확인 후 확정합니다.
           </p>
-          <SlotTable slots={slots} selectedSlots={selectedSlots} onToggle={() => {}} mode="view" />
+          <SlotTable slots={slots} selectedSlots={selectedSlots} onToggle={() => {}} mode="confirm" />
 
-          <div className="selected-slots-list">
-            <h4>최종 선택 (우선순위 순)</h4>
+          {/* 선택한 시간 정리 카드 */}
+          <div className="selected-slots-list" style={{ marginTop: '30px' }}>
+            <h4>선택한 시간 (우선순위 순)</h4>
             <ul className="list">
               {selectedSlots.map((slotId, idx) => {
                 const slot = slots[slotId];
+                const timeSlot = TIME_SLOTS.find(t => t.label === slot?.timeLabel);
                 return (
-                  <li key={slotId}>
-                    <span>
-                      {idx + 1}. {slot?.date} {TIME_SLOTS.find(t => t.label === slot?.timeLabel)?.displayLabel}
+                  <li key={slotId} style={{ background: '#e1f5fe', borderColor: '#81d4fa' }}>
+                    <span style={{ color: '#0277bd', fontWeight: '500' }}>
+                      {idx + 1}. {slot?.date} {timeSlot?.timeRange}
                     </span>
                   </li>
                 );
