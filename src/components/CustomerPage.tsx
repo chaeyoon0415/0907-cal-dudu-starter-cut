@@ -16,6 +16,7 @@ interface CustomerPageProps {
 
 export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '' }) => {
   const [customerId] = useState<string>(userId || 'C01');
+  const [displayName, setDisplayName] = useState<string>('');
   const [stage, setStage] = useState<'select' | 'confirm' | 'view' | 'reselect'>('select');
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [slots, setSlots] = useState<Record<string, Slot>>({});
@@ -25,6 +26,16 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
   const [loading, setLoading] = useState(false);
+
+  // customerId가 "name:email" 형식인 경우 name 추출
+  React.useEffect(() => {
+    if (customerId && customerId.includes(':')) {
+      const parts = customerId.split(':');
+      setDisplayName(parts[0]);
+    } else {
+      setDisplayName(customerId);
+    }
+  }, [customerId]);
 
   const om = new OperationManager(db);
   const som = new SupabaseOperationManager();
@@ -232,8 +243,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '
     <div className="customer-page">
       {mode === 'local' && (
         <div style={{ marginBottom: '20px', padding: '12px', background: '#f9f9f9', borderRadius: '4px' }}>
-          <label style={{ fontWeight: 'bold' }}>고객 코드: </label>
-          <span>{customerId}</span>
+          <label style={{ fontWeight: 'bold' }}>신청자: </label>
+          <span>{displayName || customerId}</span>
         </div>
       )}
 
@@ -336,72 +347,89 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({ db, mode, userId = '
         <div>
           <h3>내 신청 현황</h3>
           {customerRequests.map((item, idx) => (
-            <div key={item.request.id} style={{ marginBottom: '20px', padding: '16px', background: 'white', borderRadius: '4px', border: '1px solid #ddd' }}>
-              <h4>신청 #{item.request.version} (접수일: {new Date(item.request.createdAt).toLocaleString()})</h4>
+            <div key={item.request.id} className="request-status-card">
+              <div className="request-header">
+                <h4>신청 #{item.request.version} (접수일: {new Date(item.request.createdAt).toLocaleString()})</h4>
+              </div>
 
-              <div className="form-group">
-                <label>상태</label>
-                <div style={{ padding: '8px', background: '#f0f0f0', borderRadius: '4px' }}>
-                  {item.request.status === 'confirmed' && (
-                    <span className="slot-status confirmed">확정됨</span>
-                  )}
-                  {item.request.status === 'received' && (
-                    <div>
-                      <span className="slot-status available">접수됨 (관리자 확인 중)</span>
-                      {item.request.expectedConfirmAt && (
-                        <div style={{ marginTop: '8px', fontSize: '14px', color: '#666', fontWeight: 'normal' }}>
-                          <strong>{formatExpectedConfirmTime(item.request.expectedConfirmAt)}까지 확정 예정입니다.</strong>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {item.request.status === 'needs_reselection' && (
-                    <span className="alert alert-warning">재선택 필요</span>
+              {item.request.status === 'received' && (
+                <div className="status-highlight-section">
+                  <div className="status-label">접수됨 (관리자 확인 중)</div>
+                  {item.request.expectedConfirmAt && (
+                    <>
+                      <div className="confirm-date-display">
+                        {formatExpectedConfirmTime(item.request.expectedConfirmAt)}까지<br />
+                        확정 예정입니다
+                      </div>
+                      <div className="status-info-text">
+                        관리자가 신청 내용을 확인한 후 예약을 확정합니다.
+                      </div>
+                      <div className="status-info-text">
+                        확정이 완료되면 입력하신 이메일로 확정 안내 메일을 보내드립니다.
+                      </div>
+                      <div className="status-note">
+                        ※ 금요일 오후 또는 주말에 신청하신 경우, 주말을 제외하고 다음 영업일에 확정될 수 있습니다.
+                      </div>
+                    </>
                   )}
                 </div>
-              </div>
-
-              <div className="form-group">
-                <label>선택한 슬롯 (우선순위 순)</label>
-                <ul className="list">
-                  {item.candidates.map((c, cidx) => {
-                    const slot = slots[c.slotId];
-                    const isAvailable = slot?.status === 'available';
-                    return (
-                      <li key={c.id}>
-                        <span>
-                          {cidx + 1}. {slot?.date} {TIME_SLOTS.find(t => t.label === slot?.timeLabel)?.displayLabel}
-                          {' '}
-                          <span style={{ marginLeft: '10px', fontSize: '12px', color: isAvailable ? '#28a745' : '#dc3545' }}>
-                            {isAvailable ? '(가능)' : '(마감)'}
-                          </span>
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+              )}
 
               {item.request.status === 'confirmed' && (
-                <div className="alert alert-success">
-                  <strong>확정됨!</strong> {slots[item.request.confirmedSlotId!]?.date}{' '}
-                  {TIME_SLOTS.find(t => t.label === slots[item.request.confirmedSlotId!]?.timeLabel)?.displayLabel}에
-                  확정되었습니다.
+                <div className="status-highlight-section" style={{ background: '#e8f5e9', borderBottomColor: '#c8e6c9' }}>
+                  <div className="status-label" style={{ color: '#2e7d32' }}>확정됨</div>
+                  <div className="confirm-date-display" style={{ color: '#1b5e20' }}>
+                    예약이 확정되었습니다
+                  </div>
+                  <div className="status-info-text">
+                    {slots[item.request.confirmedSlotId!]?.date}{' '}
+                    {TIME_SLOTS.find(t => t.label === slots[item.request.confirmedSlotId!]?.timeLabel)?.displayLabel}
+                  </div>
                 </div>
               )}
 
-              {item.request.status === 'needs_reselection' && idx === customerRequests.length - 1 && (
-                <button
-                  className="btn btn-warning"
-                  onClick={() => {
-                    setStage('reselect');
-                    setSelectedSlots([]);
-                  }}
-                  style={{ background: '#ffc107', marginTop: '10px' }}
-                >
-                  재선택하기
-                </button>
+              {item.request.status === 'needs_reselection' && (
+                <div className="status-highlight-section" style={{ background: '#fff3e0', borderBottomColor: '#ffe0b2' }}>
+                  <div className="status-label" style={{ color: '#e65100' }}>재선택 필요</div>
+                  <div className="status-info-text" style={{ color: '#bf360c' }}>
+                    선택하신 슬롯이 모두 마감되었습니다. 다시 선택해주세요.
+                  </div>
+                </div>
               )}
+
+              <div className="request-content">
+                <div className="request-section">
+                  <div className="request-section-title">선택한 시간 (우선순위 순)</div>
+                  <div className="slots-list">
+                    {item.candidates.map((c, cidx) => {
+                      const slot = slots[c.slotId];
+                      const timeSlot = TIME_SLOTS.find(t => t.label === slot?.timeLabel);
+                      return (
+                        <div key={c.id} className="slot-item">
+                          <span className="slot-item-priority">{cidx + 1}</span>
+                          <span className="slot-item-time">
+                            {slot?.date} {timeSlot?.timeRange}
+                          </span>
+                          <span className="slot-item-status">(대기중)</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {item.request.status === 'needs_reselection' && idx === customerRequests.length - 1 && (
+                  <button
+                    className="btn btn-warning"
+                    onClick={() => {
+                      setStage('reselect');
+                      setSelectedSlots([]);
+                    }}
+                    style={{ background: '#ffc107', marginTop: '10px' }}
+                  >
+                    재선택하기
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

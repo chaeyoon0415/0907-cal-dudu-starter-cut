@@ -1,6 +1,6 @@
 // 로컬 인메모리 데이터베이스 (트랜잭션 지원)
 import type { Slot, Request, Candidate, OperationLog } from '../types';
-import { generateSlotId, getAllDates, TIME_SLOTS } from './constants';
+import { generateSlotId, getAllDates, TIME_SLOTS, calculateExpectedConfirmDate } from './constants';
 
 export interface LocalDatabase {
   slots: Record<string, Slot>;
@@ -142,7 +142,9 @@ export class DatabaseManager {
     }
 
     const now = new Date();
-    const expectedConfirmTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const expectedConfirmTime = calculateExpectedConfirmDate(now);
+    // 확정 예정 시각을 오후로 설정 (정오 이후)
+    expectedConfirmTime.setHours(14, 0, 0, 0);
 
     const request: Request = {
       id: generateId(),

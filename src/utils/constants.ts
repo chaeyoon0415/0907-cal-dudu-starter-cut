@@ -70,6 +70,31 @@ export function generateAllSlots() {
   return slots;
 }
 
+// 신청일 기준 확정 예정일 계산
+export function calculateExpectedConfirmDate(createdAt: string | Date): Date {
+  const submitDate = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
+  const dayOfWeek = submitDate.getDay(); // 0=일, 1=월, ..., 6=토
+
+  let confirmDate = new Date(submitDate);
+  confirmDate.setDate(confirmDate.getDate() + 1); // 기본: 다음 날
+
+  // 금요일(5)에 신청 → 다음 월요일
+  if (dayOfWeek === 5) {
+    confirmDate.setDate(confirmDate.getDate() + 3); // 금요일 + 1 = 토요일, + 2 = 일요일, + 3 = 월요일
+  }
+  // 토요일(6)에 신청 → 다음 월요일
+  else if (dayOfWeek === 6) {
+    confirmDate.setDate(confirmDate.getDate() + 2); // 토요일 + 1 = 일요일, + 2 = 월요일
+  }
+  // 일요일(0)에 신청 → 다음 월요일
+  else if (dayOfWeek === 0) {
+    confirmDate.setDate(confirmDate.getDate() + 1); // 이미 다음 날이 월요일
+  }
+  // 월~목요일(1~4)에 신청 → 다음 날 (기본값)
+
+  return confirmDate;
+}
+
 // 확정 예정 시점을 보기 좋은 형식으로 변환
 export function formatExpectedConfirmTime(isoTime: string): string {
   const date = new Date(isoTime);

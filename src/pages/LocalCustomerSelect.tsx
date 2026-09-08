@@ -3,16 +3,43 @@ import { useNavigate } from 'react-router-dom';
 
 export const LocalCustomerSelect: React.FC = () => {
   const navigate = useNavigate();
-  const [customerId, setCustomerId] = useState('C01');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
 
-  const handleStart = () => {
-    if (customerId.trim()) {
-      navigate(`/local/customer/${customerId}`);
-    }
+  const validateEmail = (emailStr: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(emailStr);
   };
 
-  const handlePredefined = (id: string) => {
-    navigate(`/local/customer/${id}`);
+  const handleStart = () => {
+    setError('');
+
+    if (!name.trim()) {
+      setError('이름을 입력하세요');
+      return;
+    }
+
+    if (!email.trim()) {
+      setError('이메일 주소를 입력하세요');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError('유효한 이메일 형식을 입력하세요');
+      return;
+    }
+
+    // customerId를 name:email 형식으로 생성 (base64 인코딩)
+    const customerData = btoa(JSON.stringify({ name: name.trim(), email: email.trim() }));
+    // URL 인코딩으로 base64의 특수문자 처리
+    navigate(`/local/customer/${encodeURIComponent(customerData)}`);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleStart();
+    }
   };
 
   return (
@@ -25,9 +52,9 @@ export const LocalCustomerSelect: React.FC = () => {
       gap: '30px'
     }}>
       <div>
-        <h2>고객 선택</h2>
+        <h2>신청자 정보 입력</h2>
         <p style={{ color: '#666', marginTop: '10px' }}>
-          신청할 고객을 선택하세요
+          예약을 신청할 분의 이름과 이메일 주소를 입력하세요.
         </p>
       </div>
 
@@ -38,58 +65,46 @@ export const LocalCustomerSelect: React.FC = () => {
         width: '100%',
         maxWidth: '400px'
       }}>
+        {error && (
+          <div className="alert alert-error" style={{ marginBottom: '20px' }}>
+            {error}
+          </div>
+        )}
+
         <div className="form-group">
-          <label>고객 코드 입력</label>
+          <label>이름</label>
           <input
             type="text"
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            placeholder="C01, C02 등"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleStart();
-              }
-            }}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="이름을 입력하세요"
+            onKeyPress={handleKeyPress}
           />
         </div>
+
+        <div className="form-group">
+          <label>이메일</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="이메일 주소를 입력하세요"
+            onKeyPress={handleKeyPress}
+          />
+        </div>
+
         <button
           className="btn btn-primary"
           onClick={handleStart}
           style={{ width: '100%' }}
-          disabled={!customerId.trim()}
+          disabled={!name.trim() || !email.trim()}
         >
           시작하기
         </button>
       </div>
 
-      <div style={{ width: '100%', maxWidth: '600px' }}>
-        <p style={{ color: '#666', marginBottom: '15px', fontSize: '14px' }}>
-          또는 미리 설정된 고객을 선택하세요:
-        </p>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-          gap: '10px'
-        }}>
-          {['C01', 'C02', 'C03', 'C04', 'C05', 'C06'].map((id) => (
-            <button
-              key={id}
-              className="btn btn-secondary"
-              onClick={() => handlePredefined(id)}
-              style={{
-                padding: '12px',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}
-            >
-              {id}로 시작
-            </button>
-          ))}
-        </div>
-      </div>
-
       <p style={{ fontSize: '12px', color: '#999', marginTop: '20px' }}>
-        각 고객은 독립적인 세션에서 진행됩니다.
+        입력하신 정보는 예약 신청에 사용됩니다.
       </p>
     </div>
   );

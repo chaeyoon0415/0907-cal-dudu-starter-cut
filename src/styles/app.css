@@ -757,3 +757,158 @@ body {
   background: #e1f5fe;
   border-color: #81d4fa;
 }
+
+/* 신청 현황 카드 스타일 */
+.request-status-card {
+  margin-bottom: 30px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.request-header {
+  padding: 16px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.request-header h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+/* 상태 강조 영역 */
+.status-highlight-section {
+  padding: 24px;
+  background: #e3f2fd;
+  border-bottom: 1px solid #bbdefb;
+}
+
+.status-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1565c0;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.confirm-date-display {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0d47a1;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.status-info-text {
+  font-size: 14px;
+  color: #424242;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.status-note {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.5;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #bbdefb;
+}
+
+/* 요청 상세 정보 영역 */
+.request-content {
+  padding: 24px;
+}
+
+.request-section {
+  margin-bottom: 24px;
+}
+
+.request-section:last-child {
+  margin-bottom: 0;
+}
+
+.request-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 슬롯 목록 개선 */
+.slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slot-item {
+  padding: 12px 16px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.slot-item:hover {
+  background: #eeeeee;
+}
+
+.slot-item-priority {
+  font-weight: 700;
+  color: #0d47a1;
+  font-size: 16px;
+  margin-right: 12px;
+  min-width: 20px;
+}
+
+.slot-item-time {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.slot-item-status {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #e3f2fd;
+  color: #0d47a1;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 확정 완료 상태 */
+.confirmed-section {
+  padding: 24px;
+  background: #e8f5e9;
+  border-radius: 8px;
+  border-left: 4px solid #4caf50;
+}
+
+.confirmed-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2e7d32;
+  margin-bottom: 8px;
+}
+
+.confirmed-info {
+  font-size: 14px;
+  color: #558b2f;
+  line-height: 1.6;
+}
